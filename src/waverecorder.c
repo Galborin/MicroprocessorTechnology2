@@ -49,8 +49,6 @@
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
-#define FILTER 1 //0 if no filter, 1 to filter
-
 #define TOUCH_RECORD_XMIN       180
 #define TOUCH_RECORD_XMAX       210
 #define TOUCH_RECORD_YMIN       210
@@ -66,6 +64,16 @@
 #define TOUCH_PAUSE_YMIN        210
 #define TOUCH_PAUSE_YMAX        239
 
+#define TOUCH_CHOOSE1_XMIN 	    20
+#define TOUCH_CHOOSE1_XMAX 		123
+#define TOUCH_CHOOSE1_YMIN 		100
+#define TOUCH_CHOOSE1_YMAX 		239
+
+#define TOUCH_CHOOSE2_XMAX 		230
+#define TOUCH_CHOOSE2_XMIN 		127
+#define TOUCH_CHOOSE2_YMIN 		100
+#define TOUCH_CHOOSE2_YMAX 		239
+
 uint8_t pHeaderBuff[44];
 
 /* Private macro -------------------------------------------------------------*/
@@ -75,13 +83,16 @@ static __IO uint32_t uwVolume = 100;
 extern WAVE_FormatTypeDef WaveFormat;
 extern FIL WavFile;
 static uint32_t  display_update = 1;
+static uint32_t filtration = 0;
 
 /* Private function prototypes -----------------------------------------------*/
 static uint32_t WavProcess_EncInit(uint32_t Freq, uint8_t* pHeader);
 static uint32_t WavProcess_HeaderInit(uint8_t* pHeader, WAVE_FormatTypeDef* pWaveFormatStruct);
 static uint32_t WavProcess_HeaderUpdate(uint8_t* pHeader, WAVE_FormatTypeDef* pWaveFormatStruct);
 static void AUDIO_REC_DisplayButtons(void);
-
+static void DisplayChoose(void);
+static void DisplayPrerecord(void);
+static void LCD_ClearZone(void);
 /* Private functions ---------------------------------------------------------*/
 
 /*  
@@ -114,7 +125,6 @@ static void AUDIO_REC_DisplayButtons(void);
 AUDIO_ErrorTypeDef AUDIO_REC_Start(void)
 {
   uint32_t byteswritten = 0;
-  uint8_t str[FILEMGR_FILE_NAME_SIZE + 20]; 
   uwVolume = 100;
 
   /* Create a new file system */
@@ -126,41 +136,9 @@ AUDIO_ErrorTypeDef AUDIO_REC_Start(void)
     /* Write header file */
     if(f_write(&WavFile, pHeaderBuff, 44, (void*)&byteswritten) == FR_OK)
     {
-      AudioState = AUDIO_STATE_PRERECORD;
+      AudioState = AUDIO_STATE_PRERECORD_CHOOSE;
+      DisplayChoose();
 
-      BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-      sprintf((char *)str, "Recording file: %s",
-              (char *)REC_WAVE_NAME);
-      BSP_LCD_ClearStringLine(4);
-      BSP_LCD_DisplayStringAtLine(4, str);
-
-      BSP_LCD_ClearStringLine(5);
-
-      BSP_LCD_SetTextColor(LCD_COLOR_CYAN); 
-      sprintf((char *)str,  "Sample rate : %d Hz", (int)DEFAULT_AUDIO_IN_FREQ);
-      BSP_LCD_ClearStringLine(6);
-      BSP_LCD_DisplayStringAtLine(6, str);
-
-      sprintf((char *)str,  "Channels number : %d", (int)DEFAULT_AUDIO_IN_CHANNEL_NBR);
-      BSP_LCD_ClearStringLine(7);      
-      BSP_LCD_DisplayStringAtLine(7, str);
-
-      sprintf((char *)str,  "Volume : %d ", (int)uwVolume);
-      BSP_LCD_ClearStringLine(8);
-      BSP_LCD_DisplayStringAtLine(8, str);
-
-      sprintf((char *)str, "File Size :");
-      BSP_LCD_ClearStringLine(9);
-      BSP_LCD_DisplayStringAtLine(9, str);
-
-      BSP_LCD_ClearStringLine(10);
-      BSP_LCD_ClearStringLine(11);
-      BSP_LCD_ClearStringLine(12);
-      BSP_LCD_ClearStringLine(13);
-
-      AUDIO_REC_DisplayButtons();
-
-      BSP_LCD_DisplayStringAt(15, LINE(6), (uint8_t *)"  [     ]", RIGHT_MODE);
       { 
         if(byteswritten != 0)
         {
@@ -190,7 +168,6 @@ AUDIO_ErrorTypeDef AUDIO_REC_Process(void)
   uint32_t elapsed_time; 
   static uint32_t prev_elapsed_time = 0xFFFFFFFF;
   uint8_t str[16],x,y;
-  uint8_t str2[70];
   static TS_StateTypeDef  TS_State={0};
   
   switch(AudioState)
@@ -216,7 +193,7 @@ AUDIO_ErrorTypeDef AUDIO_REC_Process(void)
                  (y > TOUCH_RECORD_YMIN) && (y < TOUCH_RECORD_YMAX))
         {
           display_update = 1;
-          AudioState = AUDIO_STATE_PRERECORD_CONTINUE;
+          AudioState = AUDIO_STATE_RECORD;
         }
       }
       else
@@ -228,34 +205,42 @@ AUDIO_ErrorTypeDef AUDIO_REC_Process(void)
     break;
 
   case AUDIO_STATE_PRERECORD_CONTINUE:
-      LCD_ClearTextZone();
-      BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
-      sprintf((char *)str2, "Recording file: %s",
-              (char *)REC_WAVE_NAME);
-      BSP_LCD_ClearStringLine(4);
-      BSP_LCD_DisplayStringAtLine(4, str2);
-
-      BSP_LCD_ClearStringLine(5);
-
-      BSP_LCD_SetTextColor(LCD_COLOR_CYAN);
-      sprintf((char *)str2,  "Sample rate : %d Hz", (int)DEFAULT_AUDIO_IN_FREQ);
-      BSP_LCD_ClearStringLine(6);
-      BSP_LCD_DisplayStringAtLine(6, str2);
-
-      sprintf((char *)str2,  "Channels number : %d", (int)DEFAULT_AUDIO_IN_CHANNEL_NBR);
-      BSP_LCD_ClearStringLine(7);
-      BSP_LCD_DisplayStringAtLine(7, str2);
-
-      sprintf((char *)str2,  "Volume : %d ", (int)uwVolume);
-      BSP_LCD_ClearStringLine(8);
-      BSP_LCD_DisplayStringAtLine(8, str2);
-
-      sprintf((char *)str2, "File Size :");
-      BSP_LCD_ClearStringLine(9);
-      BSP_LCD_DisplayStringAtLine(9, str2);
-
-	  LCD_UsrLog("chose");
+	  DisplayPrerecord();
+	  AudioState = AUDIO_STATE_PRERECORD;
 	break;
+
+  case AUDIO_STATE_PRERECORD_CHOOSE:
+	 if(TS_State.touchDetected == 1)   /* If previous touch has not been released, we don't proceed any touch command */
+    {
+		BSP_TS_GetState(&TS_State);
+    }
+	 else
+	 {
+		 BSP_TS_GetState(&TS_State);
+		 x = TouchScreen_Get_Calibrated_X(TS_State.touchX[0]);
+		 y = TouchScreen_Get_Calibrated_Y(TS_State.touchY[0]);
+		 if(TS_State.touchDetected == 1)
+		 {
+			 if ((x > TOUCH_CHOOSE1_XMIN) && (x < TOUCH_CHOOSE1_XMAX) &&
+					 (y > TOUCH_CHOOSE1_YMIN) && (y < TOUCH_CHOOSE1_YMAX))
+	         {
+				 filtration = 1;
+				 AudioState = AUDIO_STATE_PRERECORD_CONTINUE;
+	         }
+			 else if ((x > TOUCH_CHOOSE2_XMIN) && (x < TOUCH_CHOOSE2_XMAX) &&
+					 (y > TOUCH_CHOOSE2_YMIN) && (y < TOUCH_CHOOSE2_YMAX))
+	         {
+				 filtration = 0;
+				 AudioState = AUDIO_STATE_PRERECORD_CONTINUE;
+	         }
+		 }
+		 else
+		 {
+			 AudioState = AUDIO_STATE_PRERECORD_CHOOSE;
+		 }
+	 }
+  	  break;
+
   case AUDIO_STATE_RECORD:
     if (display_update)
     {
@@ -305,19 +290,27 @@ AUDIO_ErrorTypeDef AUDIO_REC_Process(void)
     if(BufferCtl.wr_state == BUFFER_FULL)
     {
       /* write buffer in file */ //+ filtracja
-	#if (FILTER == 1)
-    if(f_write(&WavFile, filter((uint8_t*)(BufferCtl.pcm_buff + BufferCtl.offset)),
-                 AUDIO_IN_PCM_BUFFER_SIZE,
-                 (void*)&byteswritten) != FR_OK)
-	#else
-    if(f_write(&WavFile, (uint8_t*)(BufferCtl.pcm_buff + BufferCtl.offset),
+    if(filtration == 1)
+	{
+    	if(f_write(&WavFile, filter((uint8_t*)(BufferCtl.pcm_buff + BufferCtl.offset)),
+               AUDIO_IN_PCM_BUFFER_SIZE,
+               (void*)&byteswritten) != FR_OK)
+   		{
+       		BSP_LCD_SetTextColor(LCD_COLOR_RED);
+           	BSP_LCD_DisplayStringAtLine(14, (uint8_t *)"RECORD FAIL");
+           	return AUDIO_ERROR_IO;
+   		}
+	}
+	else
+	{
+    	if(f_write(&WavFile, (uint8_t*)(BufferCtl.pcm_buff + BufferCtl.offset),
                  AUDIO_IN_PCM_BUFFER_SIZE, 
                  (void*)&byteswritten) != FR_OK)
-	#endif
-      {
-        BSP_LCD_SetTextColor(LCD_COLOR_RED);
-        BSP_LCD_DisplayStringAtLine(14, (uint8_t *)"RECORD FAIL");
-        return AUDIO_ERROR_IO;
+    	{
+    		BSP_LCD_SetTextColor(LCD_COLOR_RED);
+        	BSP_LCD_DisplayStringAtLine(14, (uint8_t *)"RECORD FAIL");
+        	return AUDIO_ERROR_IO;
+    	}
       }
       BufferCtl.fptr += byteswritten;
       BufferCtl.wr_state =  BUFFER_EMPTY;
@@ -660,6 +653,73 @@ static void AUDIO_REC_DisplayButtons(void)
   BSP_LCD_DisplayStringAtLine(14, (uint8_t *)"Use record button to start record,");
   BSP_LCD_DisplayStringAtLine(15, (uint8_t *)"stop to exit");  
   BSP_LCD_SetTextColor(LCD_COLOR_CYAN);
+}
+
+static void DisplayChoose(void)
+{
+	  LCD_ClearZone();
+	  BSP_LCD_SetFont(&LCD_LOG_HEADER_FONT);
+	  BSP_LCD_ClearStringLine(12);            /* Clear dedicated zone */
+	  BSP_LCD_ClearStringLine(13);
+	  BSP_LCD_ClearStringLine(14);
+	  BSP_LCD_ClearStringLine(15);
+
+	  BSP_LCD_SetTextColor(LCD_COLOR_CYAN);
+	  BSP_LCD_FillRect(TOUCH_CHOOSE1_XMIN, TOUCH_CHOOSE1_YMIN , /* Stop rectangle */
+			  TOUCH_CHOOSE1_XMAX - TOUCH_CHOOSE1_XMIN,
+			  TOUCH_CHOOSE1_YMAX - TOUCH_CHOOSE1_YMIN);
+
+	  BSP_LCD_SetTextColor(LCD_COLOR_BLACK);
+	  BSP_LCD_FillRect(TOUCH_CHOOSE2_XMIN, TOUCH_CHOOSE2_YMIN , /* Stop rectangle */
+			  TOUCH_CHOOSE2_XMAX - TOUCH_CHOOSE2_XMIN,
+			  TOUCH_CHOOSE2_YMAX - TOUCH_CHOOSE2_YMIN);
+
+	  BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
+	  BSP_LCD_SetFont(&LCD_LOG_TEXT_FONT);
+	  BSP_LCD_DisplayStringAt(0,80,(uint8_t *)"FILTER", LEFT_MODE);
+	  BSP_LCD_DisplayStringAt(0,80,(uint8_t *)"NO FILTER", RIGHT_MODE);
+	  BSP_LCD_SetTextColor(LCD_COLOR_CYAN);
+}
+
+static void DisplayPrerecord(void)
+{
+	uint8_t str[FILEMGR_FILE_NAME_SIZE + 20];
+
+	LCD_ClearZone();
+    BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+    sprintf((char *)str, "Recording file: %s",
+            (char *)REC_WAVE_NAME);
+    BSP_LCD_DisplayStringAtLine(4, str);
+
+
+
+    BSP_LCD_SetTextColor(LCD_COLOR_CYAN);
+    sprintf((char *)str,  "Sample rate : %d Hz", (int)DEFAULT_AUDIO_IN_FREQ);
+    BSP_LCD_DisplayStringAtLine(6, str);
+
+    sprintf((char *)str,  "Channels number : %d", (int)DEFAULT_AUDIO_IN_CHANNEL_NBR);
+    BSP_LCD_DisplayStringAtLine(7, str);
+
+    sprintf((char *)str,  "Volume : %d ", (int)uwVolume);
+    BSP_LCD_DisplayStringAtLine(8, str);
+
+    sprintf((char *)str, "File Size :");
+    BSP_LCD_DisplayStringAtLine(9, str);
+
+
+    AUDIO_REC_DisplayButtons();
+
+    BSP_LCD_DisplayStringAt(15, LINE(6), (uint8_t *)"  [     ]", RIGHT_MODE);
+}
+
+static void LCD_ClearZone(void)
+{
+  uint8_t i = 0;
+
+  for(i= 0; i < 13; i++)
+  {
+    BSP_LCD_ClearStringLine(i + 3);
+  }
 }
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

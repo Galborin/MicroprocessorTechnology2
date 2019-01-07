@@ -40,7 +40,7 @@ float32_t * filter(float32_t * buf)
   ** ------------------------------------------------------------------- */
   for(i=0; i < numBlocks; i++)
   {
-    arm_fir_f32(&S, inputF32 + (i * blockSize), outputF32 + (i * blockSize), blockSize);
+	  arm_fir_f32(&S, inputF32 + (i * blockSize), outputF32 + (i * blockSize), blockSize);
   }
   /* ----------------------------------------------------------------------
   ** Compare the generated output against the reference output computed
