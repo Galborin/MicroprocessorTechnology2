@@ -45,9 +45,12 @@
 
 /* Includes ------------------------------------------------------------------*/
 #include "waverecorder.h" 
+#include "filter.h"
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
+#define FILTER 1 //0 if no filter, 1 to filter
+
 #define TOUCH_RECORD_XMIN       180
 #define TOUCH_RECORD_XMAX       210
 #define TOUCH_RECORD_YMIN       210
@@ -187,6 +190,7 @@ AUDIO_ErrorTypeDef AUDIO_REC_Process(void)
   uint32_t elapsed_time; 
   static uint32_t prev_elapsed_time = 0xFFFFFFFF;
   uint8_t str[16],x,y;
+  uint8_t str2[70];
   static TS_StateTypeDef  TS_State={0};
   
   switch(AudioState)
@@ -212,7 +216,7 @@ AUDIO_ErrorTypeDef AUDIO_REC_Process(void)
                  (y > TOUCH_RECORD_YMIN) && (y < TOUCH_RECORD_YMAX))
         {
           display_update = 1;
-          AudioState = AUDIO_STATE_RECORD;
+          AudioState = AUDIO_STATE_PRERECORD_CONTINUE;
         }
       }
       else
@@ -221,6 +225,37 @@ AUDIO_ErrorTypeDef AUDIO_REC_Process(void)
       }
     }
     break;
+    break;
+
+  case AUDIO_STATE_PRERECORD_CONTINUE:
+      LCD_ClearTextZone();
+      BSP_LCD_SetTextColor(LCD_COLOR_WHITE);
+      sprintf((char *)str2, "Recording file: %s",
+              (char *)REC_WAVE_NAME);
+      BSP_LCD_ClearStringLine(4);
+      BSP_LCD_DisplayStringAtLine(4, str2);
+
+      BSP_LCD_ClearStringLine(5);
+
+      BSP_LCD_SetTextColor(LCD_COLOR_CYAN);
+      sprintf((char *)str2,  "Sample rate : %d Hz", (int)DEFAULT_AUDIO_IN_FREQ);
+      BSP_LCD_ClearStringLine(6);
+      BSP_LCD_DisplayStringAtLine(6, str2);
+
+      sprintf((char *)str2,  "Channels number : %d", (int)DEFAULT_AUDIO_IN_CHANNEL_NBR);
+      BSP_LCD_ClearStringLine(7);
+      BSP_LCD_DisplayStringAtLine(7, str2);
+
+      sprintf((char *)str2,  "Volume : %d ", (int)uwVolume);
+      BSP_LCD_ClearStringLine(8);
+      BSP_LCD_DisplayStringAtLine(8, str2);
+
+      sprintf((char *)str2, "File Size :");
+      BSP_LCD_ClearStringLine(9);
+      BSP_LCD_DisplayStringAtLine(9, str2);
+
+	  LCD_UsrLog("chose");
+	break;
   case AUDIO_STATE_RECORD:
     if (display_update)
     {
@@ -269,10 +304,16 @@ AUDIO_ErrorTypeDef AUDIO_REC_Process(void)
     /* Check if there are Data to write to USB Key */
     if(BufferCtl.wr_state == BUFFER_FULL)
     {
-      /* write buffer in file */
-      if(f_write(&WavFile, (uint8_t*)(BufferCtl.pcm_buff + BufferCtl.offset), 
+      /* write buffer in file */ //+ filtracja
+	#if (FILTER == 1)
+    if(f_write(&WavFile, filter((uint8_t*)(BufferCtl.pcm_buff + BufferCtl.offset)),
+                 AUDIO_IN_PCM_BUFFER_SIZE,
+                 (void*)&byteswritten) != FR_OK)
+	#else
+    if(f_write(&WavFile, (uint8_t*)(BufferCtl.pcm_buff + BufferCtl.offset),
                  AUDIO_IN_PCM_BUFFER_SIZE, 
                  (void*)&byteswritten) != FR_OK)
+	#endif
       {
         BSP_LCD_SetTextColor(LCD_COLOR_RED);
         BSP_LCD_DisplayStringAtLine(14, (uint8_t *)"RECORD FAIL");
@@ -313,7 +354,6 @@ AUDIO_ErrorTypeDef AUDIO_REC_Process(void)
     {
       /* Update the wav file header save it into wav file */
       WavProcess_HeaderUpdate(pHeaderBuff, &WaveFormat);
-      
       if(f_write(&WavFile, pHeaderBuff, sizeof(WAVE_FormatTypeDef), (void*)&byteswritten) == FR_OK)
       {   
         audio_error = AUDIO_ERROR_EOF;

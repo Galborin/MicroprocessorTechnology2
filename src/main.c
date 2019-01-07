@@ -144,13 +144,13 @@ static void AUDIO_InitApplication(void)
   /* Init the LCD Log module */
   LCD_LOG_Init();
   
-  LCD_LOG_SetHeader((uint8_t *)"Audio Playback/Record");
+  LCD_LOG_SetHeader((uint8_t *)"DSP by Piotr & Jakub");
   
   
-  LCD_UsrLog("USB Host library started.\n"); 
+  LCD_UsrLog("USB Host started.\n");
   
   /* Start Audio interface */
-  USBH_UsrLog("Starting Audio Demo");
+  USBH_UsrLog("Starting Program");
   
   /* Init Audio interface */
   AUDIO_PLAYER_Init();

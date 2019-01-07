@@ -96,6 +96,7 @@ void AUDIO_MenuProcess(void)
       
       AudioDemo.state = AUDIO_DEMO_WAIT;
       
+      //Start_Display();
       BSP_LCD_SetFont(&LCD_LOG_HEADER_FONT);
       BSP_LCD_ClearStringLine(9); /* Clear touch screen buttons dedicated zone */
       BSP_LCD_ClearStringLine(10);
@@ -211,6 +212,7 @@ void AUDIO_MenuProcess(void)
     case AUDIO_DEMO_IN:
       if(appli_state == APPLICATION_READY)
       {
+
         if(AudioState == AUDIO_STATE_IDLE)
         {
           /* Start Playing */
@@ -221,7 +223,7 @@ void AUDIO_MenuProcess(void)
 
           /* Init storage */
           AUDIO_StorageInit();
-          
+
           /* Configure the audio recorder: sampling frequency, bits-depth, number of channels */
           if(AUDIO_REC_Start() == AUDIO_ERROR_IO)
           {

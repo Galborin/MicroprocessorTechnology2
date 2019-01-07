@@ -65,6 +65,7 @@
 AUDIO_ErrorTypeDef AUDIO_REC_Process(void);
 AUDIO_ErrorTypeDef AUDIO_REC_Start(void);
 AUDIO_ErrorTypeDef AUDIO_PLAYER_Init(void);
+extern void static void LCD_ClearTextZone(void);
 
 #endif /* __WAVERECORDER_H */
 

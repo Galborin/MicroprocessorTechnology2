@@ -13,7 +13,7 @@
 /* ----------------------------------------------------------------------
 ** Macro Defines
 ** ------------------------------------------------------------------- */
-#define AUDIO_BLOCK_SIZE   ((uint32_t)512)
+#define AUDIO_BLOCK_SIZE   	 2*2304
 #define TEST_LENGTH_SAMPLES  AUDIO_BLOCK_SIZE//320
 #define SNR_THRESHOLD_F32    140.0f
 #define BLOCK_SIZE            32

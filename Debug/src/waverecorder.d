@@ -84,7 +84,11 @@ src/waverecorder.o: ../src/waverecorder.c \
  C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/inc/usbh_diskio_dma.h \
  C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/Middlewares/ST/STM32_USB_Host_Library/Class/MSC/Inc/usbh_msc.h \
  C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/Middlewares/ST/STM32_USB_Host_Library/Class/MSC/Inc/usbh_msc_bot.h \
- C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/Middlewares/ST/STM32_USB_Host_Library/Class/MSC/Inc/usbh_msc_scsi.h
+ C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/Middlewares/ST/STM32_USB_Host_Library/Class/MSC/Inc/usbh_msc_scsi.h \
+ C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/inc/filter.h \
+ C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/CMSIS/core/arm_math.h \
+ C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/CMSIS/core/core_cm7.h \
+ C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/inc/math_helper.h
 
 C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/inc/waverecorder.h:
 
@@ -257,3 +261,11 @@ C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/Middlewares/ST/STM32_USB_Host_Libra
 C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/Middlewares/ST/STM32_USB_Host_Library/Class/MSC/Inc/usbh_msc_bot.h:
 
 C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/Middlewares/ST/STM32_USB_Host_Library/Class/MSC/Inc/usbh_msc_scsi.h:
+
+C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/inc/filter.h:
+
+C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/CMSIS/core/arm_math.h:
+
+C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/CMSIS/core/core_cm7.h:
+
+C:/Users/piotr/OneDrive/Pulpit/Eclipse/test4/inc/math_helper.h:
