@@ -12,8 +12,8 @@
 <targetDefinitions>
   <board id="stm32f723e-disco">
     <name>STM32F723E-DISCO</name>
-    <dbgIF>SWD</dbgIF>
     <dbgIF>JTAG</dbgIF>
+    <dbgIF>SWD</dbgIF>
     <dbgDEV>ST-Link</dbgDEV>
     <mcuId>stm32f723iekx</mcuId>
   </board>
