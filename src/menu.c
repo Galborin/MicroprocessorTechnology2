@@ -1,54 +1,14 @@
-/**
-  ******************************************************************************
-  * @file    Audio/Audio_playback_and_record/Src/menu.c 
-  * @author  MCD Application Team
-  * @brief   This file implements Menu Functions
-  ******************************************************************************
-  * @attention
-  *
-  * <h2><center>&copy; Copyright (c) 2016 STMicroelectronics International N.V. 
-  * All rights reserved.</center></h2>
-  *
-  * Redistribution and use in source and binary forms, with or without 
-  * modification, are permitted, provided that the following conditions are met:
-  *
-  * 1. Redistribution of source code must retain the above copyright notice, 
-  *    this list of conditions and the following disclaimer.
-  * 2. Redistributions in binary form must reproduce the above copyright notice,
-  *    this list of conditions and the following disclaimer in the documentation
-  *    and/or other materials provided with the distribution.
-  * 3. Neither the name of STMicroelectronics nor the names of other 
-  *    contributors to this software may be used to endorse or promote products 
-  *    derived from this software without specific written permission.
-  * 4. This software, including modifications and/or derivative works of this 
-  *    software, must execute solely and exclusively on microcontroller or
-  *    microprocessor devices manufactured by or for STMicroelectronics.
-  * 5. Redistribution and use of this software other than as permitted under 
-  *    this license is void and will automatically terminate your rights under 
-  *    this license. 
-  *
-  * THIS SOFTWARE IS PROVIDED BY STMICROELECTRONICS AND CONTRIBUTORS "AS IS" 
-  * AND ANY EXPRESS, IMPLIED OR STATUTORY WARRANTIES, INCLUDING, BUT NOT 
-  * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
-  * PARTICULAR PURPOSE AND NON-INFRINGEMENT OF THIRD PARTY INTELLECTUAL PROPERTY
-  * RIGHTS ARE DISCLAIMED TO THE FULLEST EXTENT PERMITTED BY LAW. IN NO EVENT 
-  * SHALL STMICROELECTRONICS OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT,
-  * INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-  * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, 
-  * OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF 
-  * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING 
-  * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE,
-  * EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-  *
-  ******************************************************************************
-  */
+/*
+ * menu_.c
+ *
+ *  Created on: 11.01.2019
+ *      Author: piotr
+ */
 
-/* Includes ------------------------------------------------------------------*/
 #include "waveplayer.h"
 #include "waverecorder.h" 
 
-/* Private typedef -----------------------------------------------------------*/
-/* Private define ------------------------------------------------------------*/
+// Private define
 #define TOUCH_RECORD_XMIN       140
 #define TOUCH_RECORD_XMAX       170
 #define TOUCH_RECORD_YMIN       200
@@ -59,25 +19,15 @@
 #define TOUCH_PLAYBACK_YMIN     200
 #define TOUCH_PLAYBACK_YMAX     230
 
-/* Private macro -------------------------------------------------------------*/
-/* Global extern variables ---------------------------------------------------*/
-
-/* Private variables ---------------------------------------------------------*/
-AUDIO_DEMO_StateMachine     AudioDemo;
+// Private variables
+SelectStateMachine  AudioApp;
 AUDIO_PLAYBACK_StateTypeDef AudioState;
-
 TS_StateTypeDef  TS_State = {0};
-/* Private function prototypes -----------------------------------------------*/
-static void AUDIO_ChangeSelectMode(AUDIO_DEMO_SelectMode select_mode);
+
+// Private functions
+static void AUDIO_ChangeSelectMode(AUDIO_SelectMode select_mode);
 static void LCD_ClearTextZone(void);
 
-/* Private functions ---------------------------------------------------------*/
-
-/**
-  * @brief  Manages AUDIO Menu Process.
-  * @param  None
-  * @retval None
-  */
 void AUDIO_MenuProcess(void)
 {
   AUDIO_ErrorTypeDef  status;
@@ -89,12 +39,12 @@ void AUDIO_MenuProcess(void)
   
   if(appli_state == APPLICATION_READY)
   { 
-	  //AudioDemo.state = AUDIO_DEMO_IN; //piotr                             test3test3test3
-    switch(AudioDemo.state)
+
+    switch(AudioApp.state)
     {
-    case AUDIO_DEMO_IDLE:
+    case AUDIO_IDLE:
       
-      AudioDemo.state = AUDIO_DEMO_WAIT;
+      AudioApp.state = AUDIO_WAIT;
       
       //Start_Display();
       BSP_LCD_SetFont(&LCD_LOG_HEADER_FONT);
@@ -116,7 +66,7 @@ void AUDIO_MenuProcess(void)
       BSP_LCD_DisplayStringAtLine(15, (uint8_t *)"or record menu");
       break;    
       
-    case AUDIO_DEMO_WAIT:
+    case AUDIO_WAIT:
       
       BSP_TS_GetState(&TS_State);
       x=TouchScreen_Get_Calibrated_X(TS_State.touchX[0]);
@@ -126,16 +76,16 @@ void AUDIO_MenuProcess(void)
         if ((x > (TOUCH_RECORD_XMIN-10)) && (x < (TOUCH_RECORD_XMAX+10)) &&
             (y > (TOUCH_RECORD_YMIN-10)) && (y < (TOUCH_RECORD_YMAX+10)))
         {
-          AudioDemo.state = AUDIO_DEMO_IN;
+          AudioApp.state = AUDIO_IN;
         }
         else if ((x > (TOUCH_PLAYBACK_XMIN-10)) && (x < (TOUCH_PLAYBACK_XMAX+10)) &&
                  (y > (TOUCH_PLAYBACK_YMIN-10)) && (y < (TOUCH_PLAYBACK_YMAX+10)))
         {
-          AudioDemo.state = AUDIO_DEMO_PLAYBACK;
+          AudioApp.state = AUDIO_PLAYBACK;
         }
         else
         {
-          AudioDemo.state = AUDIO_DEMO_EXPLORE;
+          AudioApp.state = AUDIO_EXPLORE;
         }
         
         /* Wait for touch released */
@@ -146,27 +96,27 @@ void AUDIO_MenuProcess(void)
       }
       break;
       
-    case AUDIO_DEMO_EXPLORE: 
+    case AUDIO_EXPLORE:
       if(appli_state == APPLICATION_READY)
       {
         if(AUDIO_ShowWavFiles() > 0)
         {
           LCD_ErrLog("There is no WAV file on the USB Key.\n");         
           AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU); 
-          AudioDemo.state = AUDIO_DEMO_IDLE;
+          AudioApp.state = AUDIO_IDLE;
         }
         else
         {
-          AudioDemo.state = AUDIO_DEMO_WAIT;
+          AudioApp.state = AUDIO_WAIT;
         }
       }
       else
       {
-        AudioDemo.state = AUDIO_DEMO_WAIT;
+        AudioApp.state = AUDIO_WAIT;
       }
       break;
       
-    case AUDIO_DEMO_PLAYBACK:
+    case AUDIO_PLAYBACK:
       if(appli_state == APPLICATION_READY)
       {
         if(AudioState == AUDIO_STATE_IDLE)
@@ -175,7 +125,7 @@ void AUDIO_MenuProcess(void)
           {
             LCD_ErrLog("There is no WAV file on the USB Key.\n");         
             AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU); 
-            AudioDemo.state = AUDIO_DEMO_IDLE;
+            AudioApp.state = AUDIO_IDLE;
           }
           else
           {
@@ -188,7 +138,7 @@ void AUDIO_MenuProcess(void)
           if(AUDIO_PLAYER_Start(0) == AUDIO_ERROR_IO)
           {
             AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU); 
-            AudioDemo.state = AUDIO_DEMO_IDLE;
+            AudioApp.state = AUDIO_IDLE;
           }
         }
         else /* Not idle */
@@ -199,17 +149,17 @@ void AUDIO_MenuProcess(void)
             LCD_ClearTextZone();
             
             AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU);  
-            AudioDemo.state = AUDIO_DEMO_IDLE;
+            AudioApp.state = AUDIO_IDLE;
           }
         }
       }
       else
       {
-        AudioDemo.state = AUDIO_DEMO_WAIT;
+        AudioApp.state = AUDIO_WAIT;
       }
       break; 
       
-    case AUDIO_DEMO_IN:
+    case AUDIO_IN:
       if(appli_state == APPLICATION_READY)
       {
 
@@ -228,7 +178,7 @@ void AUDIO_MenuProcess(void)
           if(AUDIO_REC_Start() == AUDIO_ERROR_IO)
           {
             AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU); 
-            AudioDemo.state = AUDIO_DEMO_IDLE;
+            AudioApp.state = AUDIO_IDLE;
           }
         }
         else /* Not idle */
@@ -240,13 +190,13 @@ void AUDIO_MenuProcess(void)
             LCD_ClearTextZone();
             
             AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU);  
-            AudioDemo.state = AUDIO_DEMO_IDLE;
+            AudioApp.state = AUDIO_IDLE;
           }
         }
       }
       else
       {
-        AudioDemo.state = AUDIO_DEMO_WAIT;
+        AudioApp.state = AUDIO_WAIT;
       }
       break;
       
@@ -263,21 +213,12 @@ void AUDIO_MenuProcess(void)
   }
 }
 
-/*******************************************************************************
-                            Static Functions
-*******************************************************************************/
-
-/**
-  * @brief  Changes the selection mode.
-  * @param  select_mode: Selection mode
-  * @retval None
-  */
-static void AUDIO_ChangeSelectMode(AUDIO_DEMO_SelectMode select_mode)
+static void AUDIO_ChangeSelectMode(AUDIO_SelectMode select_mode)
 {
   if(select_mode == AUDIO_SELECT_MENU)
   {
     LCD_LOG_UpdateDisplay(); 
-    AudioDemo.state = AUDIO_DEMO_IDLE; 
+    AudioApp.state = AUDIO_IDLE;
   }
   else if(select_mode == AUDIO_PLAYBACK_CONTROL)
   {
@@ -285,11 +226,6 @@ static void AUDIO_ChangeSelectMode(AUDIO_DEMO_SelectMode select_mode)
   }
 }
 
-/**
-  * @brief  Clears the text zone.
-  * @param  None
-  * @retval None
-  */
 static void LCD_ClearTextZone(void)
 {
   uint8_t i = 0;
@@ -299,5 +235,3 @@ static void LCD_ClearTextZone(void)
     BSP_LCD_ClearStringLine(i + 3);
   }
 }
-
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
