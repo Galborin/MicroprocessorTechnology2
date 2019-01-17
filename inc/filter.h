@@ -13,11 +13,10 @@
 /* ----------------------------------------------------------------------
 ** Macro Defines
 ** ------------------------------------------------------------------- */
-#define AUDIO_BLOCK_SIZE   	 2*2304
-#define TEST_LENGTH_SAMPLES  AUDIO_BLOCK_SIZE//320
-#define SNR_THRESHOLD_F32    140.0f
-#define BLOCK_SIZE            32
-#define NUM_TAPS              29
+//#define AUDIO_BLOCK_SIZE   	 4*2304
+//#define TEST_LENGTH_SAMPLES  AUDIO_BLOCK_SIZE//320
+#define BLOCK_SIZE            2*2304//32
+#define NUM_TAPS              29//29
 
 /* -------------------------------------------------------------------
  * The input signal and reference output (computed with MATLAB)
@@ -26,7 +25,7 @@
 //extern float32_t testInput_f32_1kHz_15kHz[TEST_LENGTH_SAMPLES];
 //extern float32_t refOutput[TEST_LENGTH_SAMPLES];
 
-float32_t * filter(float32_t * buf);
+//float32_t *filter(float32_t *buf);
 
 #endif /* FILTER_H_ */
 

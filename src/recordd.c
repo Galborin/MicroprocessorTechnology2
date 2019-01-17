@@ -41,6 +41,21 @@ extern WAVE_FormatTypeDef WaveFormat;
 extern FIL WavFile;
 static uint32_t  display_update = 1;
 static uint32_t filtration = 0;
+
+//FIR Coefficients buffer generated using fir1() MATLAB function.
+//fir1(28, 6/24)
+const float32_t firCoeffs32[NUM_TAPS] = {
+  -0.0018225230f, -0.0015879294f, +0.0000000000f, +0.0036977508f, +0.0080754303f, +0.0085302217f, -0.0000000000f, -0.0173976984f,
+  -0.0341458607f, -0.0333591565f, +0.0000000000f, +0.0676308395f, +0.1522061835f, +0.2229246956f, +0.2504960933f, +0.2229246956f,
+  +0.1522061835f, +0.0676308395f, +0.0000000000f, -0.0333591565f, -0.0341458607f, -0.0173976984f, -0.0000000000f, +0.0085302217f,
+  +0.0080754303f, +0.0036977508f, +0.0000000000f, -0.0015879294f, -0.0018225230f
+};//*/
+/*const float32_t firCoeffs32[NUM_TAPS] = {
+		1, -0.9735
+};//*/
+// Declare State buffer of size (numTaps + blockSize - 1)
+static float32_t firStateF32[BLOCK_SIZE + NUM_TAPS - 1];
+arm_fir_instance_f32 S;
 //Private functions
 static uint32_t WavProcess_EncInit(uint32_t Freq, uint8_t* pHeader);
 static uint32_t WavProcess_HeaderInit(uint8_t* pHeader, WAVE_FormatTypeDef* pWaveFormatStruct);
@@ -54,6 +69,8 @@ AUDIO_ErrorTypeDef AUDIO_REC_Start(void)
   uint32_t byteswritten = 0;
   uwVolume = 100;
 
+  //init filter
+  arm_fir_init_f32(&S, NUM_TAPS, (float32_t *)&firCoeffs32[0], &firStateF32[0], BLOCK_SIZE);
   /* Create a new file system */
   if(f_open(&WavFile, REC_WAVE_NAME, FA_CREATE_ALWAYS | FA_WRITE) == FR_OK)
   {
@@ -84,6 +101,10 @@ AUDIO_ErrorTypeDef AUDIO_REC_Start(void)
 AUDIO_ErrorTypeDef AUDIO_REC_Process(void)
 {
   uint32_t byteswritten = 0;
+  uint16_t * temp;
+  static float32_t testOutput[BLOCK_SIZE];
+  float32_t  *inputF32;
+  float32_t *outputF32=&testOutput[0];
   AUDIO_ErrorTypeDef audio_error = AUDIO_ERROR_NONE;
   uint32_t elapsed_time;
   static uint32_t prev_elapsed_time = 0xFFFFFFFF;
@@ -235,7 +256,8 @@ AUDIO_ErrorTypeDef AUDIO_REC_Process(void)
       /* write buffer in file */ //+ filtracja
     if(filtration == 1)
 	{
-    	if(f_write(&WavFile, filter((uint8_t*)(BufferCtl.pcm_buff + BufferCtl.offset)),
+    	arm_fir_f32(&S, (uint8_t*)(BufferCtl.pcm_buff + BufferCtl.offset), outputF32, BLOCK_SIZE);
+    	if(f_write(&WavFile, outputF32,
                AUDIO_IN_BUFFER_SIZE,
                (void*)&byteswritten) != FR_OK)
    		{
