@@ -243,7 +243,7 @@ void arm_dct4_f32(
    *     Step2: Calculate RFFT for N-point input    
    * ---------------------------------------------------------- */
   /* pInlineBuffer is real input of length N , pState is the complex output of length 2N */
-  arm_rfft_f32(S->pRfft, pInlineBuffer, pState);
+  arm_rfft_f32(S->pRfft, pInlineBuffer, pState,0);
 
         /*----------------------------------------------------------------------    
 	 *  Step3: Multiply the FFT output with the weights.    

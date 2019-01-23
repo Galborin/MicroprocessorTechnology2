@@ -22,7 +22,7 @@
 
 /* Exported Defines ----------------------------------------------------------*/
 #define AUDIO_OUT_BUFFER_SIZE                      8192
-#define AUDIO_IN_BUFFER_SIZE                   4*2304//9216 /* buffer size in half-word */
+#define AUDIO_IN_BUFFER_SIZE                   		512//9216 /* buffer size in half-word */
 
 #define FILEMGR_LIST_DEPDTH                        24
 #define FILEMGR_FILE_NAME_SIZE                     40
@@ -101,7 +101,7 @@ typedef enum {
 }WR_BUFFER_StateTypeDef;
 
 typedef struct {
-  uint16_t pcm_buff[AUDIO_IN_BUFFER_SIZE];
+  float32_t pcm_buff[AUDIO_IN_BUFFER_SIZE]; //zmiana uint16_t - > float32_t
   uint32_t pcm_ptr;
   WR_BUFFER_StateTypeDef wr_state;
   uint32_t offset;

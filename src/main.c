@@ -7,6 +7,7 @@
 
 #include "waveplayer.h"
 #include "waverecorder.h"
+#include "arm_math.h"
 
 // Private variables
 USBH_HandleTypeDef hUSBHost;
@@ -57,6 +58,10 @@ int main(void)
   /* Start Host Process */
   USBH_Start(&hUSBHost);
   
+  /*Init mfcc */
+  mfcc_init();
+
+
   /* Run Application (Blocking mode) */
   while (1)
   {
@@ -65,6 +70,7 @@ int main(void)
     
     /* AUDIO Menu Process */
     AUDIO_MenuProcess();
+
   }
 }
 
@@ -87,7 +93,7 @@ static void AUDIO_InitApplication(void)
   /* Init the LCD Log module */
   LCD_LOG_Init();
   
-  LCD_LOG_SetHeader((uint8_t *)"DSP by Piotr & Jakub");
+  LCD_LOG_SetHeader((uint8_t *)"Bartek, Piotr & Jakub");
   
   
   LCD_UsrLog("USB Host started.\n");

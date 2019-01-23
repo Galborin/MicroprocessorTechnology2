@@ -15,7 +15,7 @@
 ** ------------------------------------------------------------------- */
 //#define AUDIO_BLOCK_SIZE   	 4*2304
 //#define TEST_LENGTH_SAMPLES  AUDIO_BLOCK_SIZE//320
-#define BLOCK_SIZE            2*2304//32
+#define BLOCK_SIZE            256//32
 #define NUM_TAPS              29//29
 
 /* -------------------------------------------------------------------
