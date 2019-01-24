@@ -982,7 +982,7 @@ uint8_t BSP_AUDIO_IN_OUT_Init(uint16_t InputDevice, uint16_t OutputDevice, uint3
   *               Be careful that it is not the same unit than BSP_AUDIO_OUT_Play function
   * @retval AUDIO_OK if correct communication, else wrong communication
   */
-uint8_t  BSP_AUDIO_IN_Record(uint16_t* pbuf, uint32_t size)
+uint8_t  BSP_AUDIO_IN_Record(uint16_t * pbuf, uint32_t size)
 {
   uint32_t ret = AUDIO_ERROR;
   

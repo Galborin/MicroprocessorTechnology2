@@ -4,11 +4,8 @@
  *  Created on: 22.01.2019
  *      Author: piotr
  */
-#define BLOCK_SIZE	256
-#define CEPLENGTH	20
 
-#include"arm_math.h"
-#include"stdio.h"
+#include"mfcc.h"
 
 arm_rfft_fast_instance_f32 S; //FFT
 arm_rfft_instance_f32 S2; //Do DCT
@@ -31,13 +28,18 @@ void mfcc_init()
 	//dla 128 jest 0.125
 }
 
-
-void mfcc(void*input1,float32_t *output)
+//output musi byc wyzerowany
+void mfcc(uint16_t *input1,float32_t *output)
 {
 
-unsigned char *input = (unsigned char *)input1;
+	float32_t input[BLOCK_SIZE];
 
-float32_t fftout[BLOCK_SIZE];
+	for(uint16_t p = 0;p<BLOCK_SIZE;++p)
+	{
+		input[p]=(float32_t)input1[p];
+	}
+
+	float32_t fftout[BLOCK_SIZE];
 
 const float32_t hamming[BLOCK_SIZE]=
 {
@@ -181,8 +183,32 @@ for(uint8_t i=0;i<CEPLENGTH;i++)
 {
 	output[i]=log(output[i]);
 }
-
+}
 //DCT
 //arm_dct4_f32(&D, dctState,output);
+
+void DCT_custom(float32_t *input,float32_t *output,uint16_t length)
+{
+    float32_t temp;
+    for(int i=0;i<length;i++)
+    {
+    	temp=0;
+    	if(i==0)
+    	{
+    		for(int j=0;j<length;j++)
+    		{
+    			temp=temp+input[j];
+    		}
+    		output[i]=temp/sqrtf(length);
+    	}
+    	else
+    	{
+    		for(int j=0;j<length;j++)
+    	{
+    		temp=temp+(input[j]*cos((pi*i*(2*j+1))/(2*length)));
+        }
+    		output[i]=temp*sqrtf(2)/sqrtf(length);
+    	}
+    }
 
 }

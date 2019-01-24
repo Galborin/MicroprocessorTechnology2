@@ -45,6 +45,7 @@
 
  /* Includes ------------------------------------------------------------------*/
 #include "stm32f7xx_hal.h"
+#include"arm_math.h"
 
 /** @addtogroup BSP
   * @{

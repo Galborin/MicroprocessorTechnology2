@@ -5,26 +5,19 @@
  *      Author: piotr
  */
 
-#define SAMPLING_FREQ 	8000
-#define SECTION			8960
-#define STEP 			85
-#define BLOCK_SIZE 	  	256
-#define BASE_SIZE		512
-#define CEP				19
-#define NCEPVEC			65
-
-#include "stdio.h"
-#include "arm_math.h"
+#include "process_sections.h"
 
 
 /* input[NCEPVEC][CEP] -> input[CEP][NCEPVEC]
  * reference[ref_ncepvec][CEP] -> reference[CEP][ref_ncepvec]
  * */
-void classify(uint16_t ref_ncepvec,float32_t reference[CEP][ref_ncepvec],float32_t input[CEP][NCEPVEC])
+float32_t classify(uint16_t ref_ncepvec,float32_t reference[CEP][ref_ncepvec],float32_t input[CEP][NCEPVEC])
 {
+	static float32_t d[NCEPVEC][NCEPVEC];//[ref_ncepvec]; //macierz odleglosci
+	static float32_t g[NCEPVEC][NCEPVEC];//[ref_ncepvec]; //macierz zakumulowana
+	float32_t global = 0;
 	uint8_t Q = 0.2 * ref_ncepvec;// 0.2 * liczba vektorow cepstralnych wzorca (moze ich byc wiecej niz w inpucie)  ;
-	float32_t d[NCEPVEC][ref_ncepvec]; //macierz odleglosci
-	float32_t g[NCEPVEC][ref_ncepvec]; //macierz zakumulowana
+
 	for(uint16_t ver = 0; ver< NCEPVEC;++ver)
 	{
 		for(uint16_t hor = 0;hor<ref_ncepvec;++hor)
@@ -106,6 +99,8 @@ void classify(uint16_t ref_ncepvec,float32_t reference[CEP][ref_ncepvec],float32
 			 //the lowest value
 		}
 	}
+	global = g[NCEPVEC][ref_ncepvec]/sqrt((NCEPVEC*NCEPVEC)+(ref_ncepvec*ref_ncepvec));
+	return global;
 }
 
 

@@ -19,6 +19,7 @@
 #include "ff.h"
 #include "ff_gen_drv.h"
 #include "usbh_diskio_dma.h"
+#include "arm_math.h"
 
 /* Exported Defines ----------------------------------------------------------*/
 #define AUDIO_OUT_BUFFER_SIZE                      8192
@@ -101,7 +102,7 @@ typedef enum {
 }WR_BUFFER_StateTypeDef;
 
 typedef struct {
-  float32_t pcm_buff[AUDIO_IN_BUFFER_SIZE]; //zmiana uint16_t - > float32_t
+  uint16_t pcm_buff[AUDIO_IN_BUFFER_SIZE]; //zmiana uint16_t - > float32_t
   uint32_t pcm_ptr;
   WR_BUFFER_StateTypeDef wr_state;
   uint32_t offset;

@@ -60,7 +60,12 @@ int main(void)
   
   /*Init mfcc */
   mfcc_init();
-
+//  uint32_t tab[]={1,245,270};
+//  float32_t *taf;
+//  taf = (float32_t*)tab;
+//  float32_t xd = (float32_t)tab[2];
+//  xd = tab[1];
+//  xd= (float32_t)tab[0];
 
   /* Run Application (Blocking mode) */
   while (1)
