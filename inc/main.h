@@ -62,6 +62,7 @@ typedef enum {
 typedef struct {
   uint16_t pcm_buff[AUDIO_IN_BUFFER_SIZE];
   uint32_t pcm_ptr;
+  BufferCtl fptr;
   WR_BUFFER_StateTypeDef wr_state;
   uint32_t offset;
 }AUDIO_IN_BufferTypeDef;

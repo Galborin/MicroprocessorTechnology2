@@ -10,7 +10,9 @@
 
 //Public variables
 AppStateMachine appli_state = APPLICATION_IDLE;
-
+FATFS USBH_FatFs;
+char USBKey_Path[4] = "0:/";
+USBH_HandleTypeDef hUSBHost;
 // Private variables
 
 // Private functions
@@ -19,6 +21,10 @@ static void Error_Handler(void);
 static void AUDIO_InitApplication(void);
 static void CPU_CACHE_Enable(void);
 static void MPU_Config(void);
+static void USBH_UserProcess(USBH_HandleTypeDef *phost, uint8_t id);
+
+//Imported functions
+extern void LCD_ClearTextZone();
 
 int main(void)
 {
@@ -45,19 +51,31 @@ int main(void)
   /* Init TS module */
   BSP_TS_Init(BSP_LCD_GetXSize(), BSP_LCD_GetYSize()); 
   
+  /* Init Host Library */
+  USBH_Init(&hUSBHost, USBH_UserProcess, 0);
+
+  /* Add Supported Class */
+  USBH_RegisterClass(&hUSBHost, USBH_MSC_CLASS);
+
   /*Init mfcc */
   mfcc_init();
 
-  appli_state = APPLICATION_READY;
+  /* Start Host Process */
+  USBH_Start(&hUSBHost);
+
+  //appli_state = APPLICATION_READY;
   /* Run Application */
+
   while (1)
   {
+	/* USB Host Background task */
+	USBH_Process(&hUSBHost);
     /* AUDIO Menu Process */
     AUDIO_MenuProcess();
   }
 }
 /*
- * @brief Init LCD, Touchscreen, Audio Interface
+ * @brief Init LCD, Touchscreen
  */
 static void AUDIO_InitApplication(void)
 {
@@ -78,7 +96,52 @@ static void AUDIO_InitApplication(void)
   /* Init the LCD Log module */
   LCD_LOG_Init();
   
-  LCD_LOG_SetHeader((uint8_t *)"Bartek, Piotr & Jakub");
+  LCD_LOG_SetHeader((uint8_t *)"DSP App by Piotr");
+}
+
+static void USBH_UserProcess(USBH_HandleTypeDef *phost, uint8_t id)
+{
+  switch(id)
+  {
+  case HOST_USER_SELECT_CONFIGURATION:
+    break;
+
+  case HOST_USER_DISCONNECTION:
+    appli_state = APPLICATION_DISCONNECT;
+    LCD_ClearTextZone();
+    if(FATFS_UnLinkDriver(USBKey_Path) != 0)
+    {
+      LCD_ErrLog("ERROR : Cannot unlink FatFS driver! \n");
+    }
+    if(f_mount(NULL, "", 0) != FR_OK)
+    {
+      LCD_ErrLog("ERROR : Cannot DeInitialize FatFs! \n");
+    }
+    break;
+
+  case HOST_USER_CLASS_ACTIVE:
+    appli_state = APPLICATION_READY;
+    break;
+
+  case HOST_USER_CONNECTION:
+     /* Link the USB Mass Storage disk I/O driver */
+    if(FATFS_LinkDriver(&USBH_Driver, USBKey_Path) != 0)
+    {
+      LCD_ErrLog("ERROR : Cannot link FatFS driver! \n");
+     break;
+    }
+    if(f_mount(&USBH_FatFs, "", 0) != FR_OK)
+    {
+      LCD_ErrLog("ERROR : Cannot Initialize FatFs! \n");
+     break;
+    }
+
+    appli_state = APPLICATION_START;
+    break;
+
+  default:
+    break;
+  }
 }
 
 /**

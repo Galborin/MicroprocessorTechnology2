@@ -180,7 +180,7 @@ void LCD_LOG_SetHeader (uint8_t *header)
   BSP_LCD_SetFont (&LCD_LOG_HEADER_FONT);
 
   BSP_LCD_SetTextColor(LCD_LOG_SOLID_BACKGROUND_COLOR);
-  BSP_LCD_FillRect(0, 0, BSP_LCD_GetXSize(), LCD_LOG_HEADER_FONT.Height * 3);
+  BSP_LCD_FillRect(0, 0, BSP_LCD_GetXSize(), LCD_LOG_HEADER_FONT.Height * 2);
   
   /* Set the LCD Text Color */
   BSP_LCD_SetTextColor(LCD_LOG_SOLID_TEXT_COLOR);

@@ -34,8 +34,8 @@ TS_StateTypeDef  TS_State = {0};
 // Private variables
 static SelectedStateMachine  AppSelectedState;
 
-// Private functions
-static void LCD_ClearTextZone(void);
+// Exported functions
+void LCD_ClearTextZone(void);
 
 /*
  * @brief Menu display and state machine
@@ -56,9 +56,6 @@ void AUDIO_MenuProcess(void)
       
       //Start_Display();
       BSP_LCD_SetFont(&LCD_LOG_HEADER_FONT);
-      BSP_LCD_ClearStringLine(0); /* Clear touch screen*/
-      BSP_LCD_ClearStringLine(1);
-      BSP_LCD_ClearStringLine(2);
       LCD_ClearTextZone();
       BSP_LCD_SetTextColor(LCD_COLOR_CYAN);
       BSP_LCD_FillCircle((TOUCH_RECORD_XMAX+TOUCH_RECORD_XMIN)/2, /* Record circle */
@@ -144,15 +141,15 @@ void AUDIO_MenuProcess(void)
   
   if(appli_state == APPLICATION_DISCONNECT)
   {
-	LCD_ClearTextZone();
-    appli_state = APPLICATION_IDLE;     
+	  LCD_ClearTextZone();
+	  AppSelectedState.state = AUDIO_IDLE;
   }
 }
 
 /*
  * @brief Clears lines from 3 to 15
  */
-static void LCD_ClearTextZone(void)
+void LCD_ClearTextZone(void)
 {
   uint8_t i = 0;
   
@@ -161,3 +158,5 @@ static void LCD_ClearTextZone(void)
     BSP_LCD_ClearStringLine(i + 3);
   }
 }
+
+/**************************************end*/
