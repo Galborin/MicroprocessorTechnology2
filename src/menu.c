@@ -5,69 +5,72 @@
  *      Author: piotr
  */
 
-#include "waveplayer.h"
-#include "waverecorder.h" 
+#include <record.h>
 
 // Private define
-#define TOUCH_RECORD_XMIN       140
-#define TOUCH_RECORD_XMAX       170
+#define TOUCH_RECORD_XMIN       100
+#define TOUCH_RECORD_XMAX       130
 #define TOUCH_RECORD_YMIN       200
 #define TOUCH_RECORD_YMAX       230
 
-#define TOUCH_PLAYBACK_XMIN     60
-#define TOUCH_PLAYBACK_XMAX     90
-#define TOUCH_PLAYBACK_YMIN     200
-#define TOUCH_PLAYBACK_YMAX     230
+/* Selected State Structure */
+typedef enum {
+  AUDIO_IDLE = 0,
+  AUDIO_WAIT,
+  AUDIO_EXPLORE,
+  AUDIO_PLAYBACK,
+  AUDIO_IN,
+}SelectedState;
 
-// Private variables
-SelectStateMachine  AudioApp;
-AUDIO_PLAYBACK_StateTypeDef AudioState;
+/* Selected State Machine Structure */
+typedef struct SelectedStateMachine {
+  __IO SelectedState state;
+  __IO uint8_t select;
+}SelectedStateMachine;
+
+//Public variables
 TS_StateTypeDef  TS_State = {0};
 
+// Private variables
+static SelectedStateMachine  AppSelectedState;
+
 // Private functions
-static void AUDIO_ChangeSelectMode(AUDIO_SelectMode select_mode);
 static void LCD_ClearTextZone(void);
 
+/*
+ * @brief Menu display and state machine
+ */
 void AUDIO_MenuProcess(void)
 {
   AUDIO_ErrorTypeDef  status;
   TS_StateTypeDef  TS_State;
   uint8_t x,y;
-  Point PlaybackLogoPoints[] = {{TOUCH_PLAYBACK_XMIN, TOUCH_PLAYBACK_YMIN},
-                                {TOUCH_PLAYBACK_XMAX, (TOUCH_PLAYBACK_YMIN+TOUCH_PLAYBACK_YMAX)/2},
-                                {TOUCH_PLAYBACK_XMIN, TOUCH_PLAYBACK_YMAX}};
   
   if(appli_state == APPLICATION_READY)
   { 
-
-    switch(AudioApp.state)
+    switch(AppSelectedState.state)
     {
     case AUDIO_IDLE:
-      
-      AudioApp.state = AUDIO_WAIT;
+/*AUDIO_IDLE*/
+      AppSelectedState.state = AUDIO_WAIT;
       
       //Start_Display();
       BSP_LCD_SetFont(&LCD_LOG_HEADER_FONT);
-      BSP_LCD_ClearStringLine(9); /* Clear touch screen buttons dedicated zone */
-      BSP_LCD_ClearStringLine(10);
-      BSP_LCD_ClearStringLine(11);
-      BSP_LCD_ClearStringLine(12);     
-      BSP_LCD_ClearStringLine(13);
-      BSP_LCD_ClearStringLine(14);
-      BSP_LCD_ClearStringLine(15);
+      BSP_LCD_ClearStringLine(0); /* Clear touch screen*/
+      BSP_LCD_ClearStringLine(1);
+      BSP_LCD_ClearStringLine(2);
+      LCD_ClearTextZone();
       BSP_LCD_SetTextColor(LCD_COLOR_CYAN);
-      BSP_LCD_FillPolygon(PlaybackLogoPoints, 3);                 /* Playback sign */
       BSP_LCD_FillCircle((TOUCH_RECORD_XMAX+TOUCH_RECORD_XMIN)/2, /* Record circle */
                          (TOUCH_RECORD_YMAX+TOUCH_RECORD_YMIN)/2,
                          (TOUCH_RECORD_XMAX-TOUCH_RECORD_XMIN)/2);
       BSP_LCD_SetTextColor(LCD_COLOR_GREEN);
       BSP_LCD_SetFont(&LCD_LOG_TEXT_FONT);
-      BSP_LCD_DisplayStringAtLine(14, (uint8_t *)"Use touch screen to enter playback");
-      BSP_LCD_DisplayStringAtLine(15, (uint8_t *)"or record menu");
+      BSP_LCD_DisplayStringAtLine(14, (uint8_t *)"Use touch screen to enter");
       break;    
-      
+/*AUDIO_IDLE*/
     case AUDIO_WAIT:
-      
+/*AUDIO_WAIT*/
       BSP_TS_GetState(&TS_State);
       x=TouchScreen_Get_Calibrated_X(TS_State.touchX[0]);
       y=TouchScreen_Get_Calibrated_Y(TS_State.touchY[0]);
@@ -76,16 +79,11 @@ void AUDIO_MenuProcess(void)
         if ((x > (TOUCH_RECORD_XMIN-10)) && (x < (TOUCH_RECORD_XMAX+10)) &&
             (y > (TOUCH_RECORD_YMIN-10)) && (y < (TOUCH_RECORD_YMAX+10)))
         {
-          AudioApp.state = AUDIO_IN;
-        }
-        else if ((x > (TOUCH_PLAYBACK_XMIN-10)) && (x < (TOUCH_PLAYBACK_XMAX+10)) &&
-                 (y > (TOUCH_PLAYBACK_YMIN-10)) && (y < (TOUCH_PLAYBACK_YMAX+10)))
-        {
-          AudioApp.state = AUDIO_PLAYBACK;
+          AppSelectedState.state = AUDIO_IN;
         }
         else
         {
-          AudioApp.state = AUDIO_EXPLORE;
+          AppSelectedState.state = AUDIO_WAIT;
         }
         
         /* Wait for touch released */
@@ -95,71 +93,18 @@ void AUDIO_MenuProcess(void)
         }while(TS_State.touchDetected > 0);
       }
       break;
-      
+/*AUDIO_WAIT*/
     case AUDIO_EXPLORE:
-      if(appli_state == APPLICATION_READY)
-      {
-        if(AUDIO_ShowWavFiles() > 0)
-        {
-          LCD_ErrLog("There is no WAV file on the USB Key.\n");         
-          AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU); 
-          AudioApp.state = AUDIO_IDLE;
-        }
-        else
-        {
-          AudioApp.state = AUDIO_WAIT;
-        }
-      }
-      else
-      {
-        AudioApp.state = AUDIO_WAIT;
-      }
+/*AUDIO_EXPLORE*/
       break;
-      
+/*AUDIO_EXPLORE*/
     case AUDIO_PLAYBACK:
-      if(appli_state == APPLICATION_READY)
-      {
-        if(AudioState == AUDIO_STATE_IDLE)
-        {
-          if(AUDIO_ShowWavFiles() > 0)
-          {
-            LCD_ErrLog("There is no WAV file on the USB Key.\n");         
-            AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU); 
-            AudioApp.state = AUDIO_IDLE;
-          }
-          else
-          {
-            /* Start Playing */
-            AudioState = AUDIO_STATE_INIT;
-          }
-          /* Clear the LCD */
-          LCD_ClearTextZone();
-          
-          if(AUDIO_PLAYER_Start(0) == AUDIO_ERROR_IO)
-          {
-            AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU); 
-            AudioApp.state = AUDIO_IDLE;
-          }
-        }
-        else /* Not idle */
-        {
-          if(AUDIO_PLAYER_Process() == AUDIO_ERROR_IO)
-          {
-            /* Clear the LCD */
-            LCD_ClearTextZone();
-            
-            AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU);  
-            AudioApp.state = AUDIO_IDLE;
-          }
-        }
-      }
-      else
-      {
-        AudioApp.state = AUDIO_WAIT;
-      }
+/*AUDIO_PLAYBACK*/
+
       break; 
-      
+/*AUDIO_PLAYBACK*/
     case AUDIO_IN:
+/*AUDIO_IN*/
       if(appli_state == APPLICATION_READY)
       {
 
@@ -171,61 +116,42 @@ void AUDIO_MenuProcess(void)
           /* Clear the LCD */
           LCD_ClearTextZone();
 
-          /* Init storage */
-          AUDIO_StorageInit();
-
           /* Configure the audio recorder: sampling frequency, bits-depth, number of channels */
           if(AUDIO_REC_Start() == AUDIO_ERROR_IO)
           {
-            AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU); 
-            AudioApp.state = AUDIO_IDLE;
+            AppSelectedState.state = AUDIO_IDLE;
           }
         }
         else /* Not idle */
         {
           status = AUDIO_REC_Process();
-          if((status == AUDIO_ERROR_IO) || (status == AUDIO_ERROR_EOF))
+          if((status == AUDIO_ERROR_IO))
           {
-            /* Clear the LCD */
-            LCD_ClearTextZone();
-            
-            AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU);  
-            AudioApp.state = AUDIO_IDLE;
+            AppSelectedState.state = AUDIO_IDLE;
           }
         }
       }
       else
       {
-        AudioApp.state = AUDIO_WAIT;
+        AppSelectedState.state = AUDIO_WAIT;
       }
       break;
-      
+/*AUDIO_IN*/
     default:
       break;
-    }
-  }
+    }//end switch
+  }//end if(APPLICATION_READY)
   
   if(appli_state == APPLICATION_DISCONNECT)
   {
+	LCD_ClearTextZone();
     appli_state = APPLICATION_IDLE;     
-    AUDIO_ChangeSelectMode(AUDIO_SELECT_MENU); 
-    BSP_AUDIO_OUT_Stop(CODEC_PDWN_SW);    
   }
 }
 
-static void AUDIO_ChangeSelectMode(AUDIO_SelectMode select_mode)
-{
-  if(select_mode == AUDIO_SELECT_MENU)
-  {
-    LCD_LOG_UpdateDisplay(); 
-    AudioApp.state = AUDIO_IDLE;
-  }
-  else if(select_mode == AUDIO_PLAYBACK_CONTROL)
-  {
-    LCD_ClearTextZone();   
-  }
-}
-
+/*
+ * @brief Clears lines from 3 to 15
+ */
 static void LCD_ClearTextZone(void)
 {
   uint8_t i = 0;
