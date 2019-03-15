@@ -37,6 +37,8 @@ static SelectedStateMachine  AppSelectedState;
 // Exported functions
 void LCD_ClearTextZone(void);
 
+//imported variables
+extern AUDIO_StateTypeDef AudioState;
 /*
  * @brief Menu display and state machine
  */
@@ -116,6 +118,7 @@ void AUDIO_MenuProcess(void)
           /* Configure the audio recorder: sampling frequency, bits-depth, number of channels */
           if(AUDIO_REC_Start() == AUDIO_ERROR_IO)
           {
+        	AudioState = AUDIO_STATE_IDLE;
             AppSelectedState.state = AUDIO_IDLE;
           }
         }
