@@ -122,7 +122,7 @@ void AUDIO_MenuProcess(void)
         else /* Not idle */
         {
           status = AUDIO_REC_Process();
-          if((status == AUDIO_ERROR_IO))
+          if((status == AUDIO_ERROR_IO) || (status == AUDIO_ERROR_EOF))
           {
             AppSelectedState.state = AUDIO_IDLE;
           }
