@@ -5,24 +5,26 @@
  *      Author: piotr
  */
 
-#include "waveplayer.h"
-#include "waverecorder.h"
-#include "arm_math.h"
+#include <record.h>
+//#include "arm_math.h"
 
-// Private variables
-USBH_HandleTypeDef hUSBHost;
+//Public variables
 AppStateMachine appli_state = APPLICATION_IDLE;
-
 FATFS USBH_FatFs;
 char USBKey_Path[4] = "0:/";
+USBH_HandleTypeDef hUSBHost;
+// Private variables
 
 // Private functions
 static void SystemClock_Config(void);
 static void Error_Handler(void);
-static void USBH_UserProcess(USBH_HandleTypeDef *phost, uint8_t id);
 static void AUDIO_InitApplication(void);
 static void CPU_CACHE_Enable(void);
 static void MPU_Config(void);
+static void USBH_UserProcess(USBH_HandleTypeDef *phost, uint8_t id);
+
+//Imported functions
+extern void LCD_ClearTextZone();
 
 int main(void)
 {
@@ -54,31 +56,27 @@ int main(void)
 
   /* Add Supported Class */
   USBH_RegisterClass(&hUSBHost, USBH_MSC_CLASS);
-  
-  /* Start Host Process */
-  USBH_Start(&hUSBHost);
-  
+
   /*Init mfcc */
   mfcc_init();
-//  uint32_t tab[]={1,245,270};
-//  float32_t *taf;
-//  taf = (float32_t*)tab;
-//  float32_t xd = (float32_t)tab[2];
-//  xd = tab[1];
-//  xd= (float32_t)tab[0];
 
-  /* Run Application (Blocking mode) */
+  /* Start Host Process */
+  USBH_Start(&hUSBHost);
+
+  //appli_state = APPLICATION_READY;
+  /* Run Application */
+
   while (1)
   {
-    /* USB Host Background task */
-    USBH_Process(&hUSBHost);
-    
+	/* USB Host Background task */
+	USBH_Process(&hUSBHost);
     /* AUDIO Menu Process */
     AUDIO_MenuProcess();
-
   }
 }
-
+/*
+ * @brief Init LCD, Touchscreen
+ */
 static void AUDIO_InitApplication(void)
 {
   /* Initialize the LCD */
@@ -98,28 +96,19 @@ static void AUDIO_InitApplication(void)
   /* Init the LCD Log module */
   LCD_LOG_Init();
   
-  LCD_LOG_SetHeader((uint8_t *)"Bartek, Piotr & Jakub");
-  
-  
-  LCD_UsrLog("USB Host started.\n");
-  
-  /* Start Audio interface */
-  USBH_UsrLog("Starting Program");
-  
-  /* Init Audio interface */
-  AUDIO_PLAYER_Init();
+  LCD_LOG_SetHeader((uint8_t *)"DSP App by Piotr");
 }
-
 
 static void USBH_UserProcess(USBH_HandleTypeDef *phost, uint8_t id)
 {
   switch(id)
-  { 
+  {
   case HOST_USER_SELECT_CONFIGURATION:
     break;
-    
+
   case HOST_USER_DISCONNECTION:
     appli_state = APPLICATION_DISCONNECT;
+    LCD_ClearTextZone();
     if(FATFS_UnLinkDriver(USBKey_Path) != 0)
     {
       LCD_ErrLog("ERROR : Cannot unlink FatFS driver! \n");
@@ -133,7 +122,7 @@ static void USBH_UserProcess(USBH_HandleTypeDef *phost, uint8_t id)
   case HOST_USER_CLASS_ACTIVE:
     appli_state = APPLICATION_READY;
     break;
- 
+
   case HOST_USER_CONNECTION:
      /* Link the USB Mass Storage disk I/O driver */
     if(FATFS_LinkDriver(&USBH_Driver, USBKey_Path) != 0)
@@ -149,9 +138,9 @@ static void USBH_UserProcess(USBH_HandleTypeDef *phost, uint8_t id)
 
     appli_state = APPLICATION_START;
     break;
-   
+
   default:
-    break; 
+    break;
   }
 }
 
@@ -175,6 +164,7 @@ static void USBH_UserProcess(USBH_HandleTypeDef *phost, uint8_t id)
   * @param  None
   * @retval None
   */
+
 static void SystemClock_Config(void)
 {
   RCC_ClkInitTypeDef RCC_ClkInitStruct;
